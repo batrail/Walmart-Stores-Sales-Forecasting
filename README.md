@@ -38,7 +38,7 @@ Where:
 ## Repository Structure
 
 ```text
-GitHub Repo/
+Walmart-Stores-Sales-Forecasting/
 ├── .gitignore                      # Git ignore rules for R session files & cache
 ├── README.md                       # Project overview, structure, and setup instructions
 │
@@ -54,14 +54,23 @@ GitHub Repo/
 │       ├── features_clean.rds      # Cleaned store-level features & imputed covariates
 |       ├── train_merged_clean.rds  # Cleaned historical training data joined with stores & features
 |       ├── features_clean.rds      # Cleaned test data joined with stores & features
+│       ├── train_merged_clean.rds  # Cleaned historical training data joined with stores & features
+│       ├── test_merged_clean.rds   # Cleaned test data joined with stores & features
 │       └── README.md               # Summary of cleaning steps
 │
 ├── docs/                           # Deliverable reports and documentation
-├── figures/                        # Visualizations and plots
+├── figures/                        # Exploratory data visualizations
+│   ├── avg-weekly-sales-by-size.png    # Store size vs. mean sales by store type
+│   ├── feature-correlation-matrix.png  # Correlation matrix across features and sales
+│   └── weekly-sales-YoY.png            # Year-over-Year weekly sales seasonality
 ├── models/                         # Trained models and evaluation metrics
 ├── rubric/                         # Instructor-provided project instructions and grading rubric
 └── scripts/
-    └── data-cleaning.R             # End-to-end data cleaning, imputation, and merging
+    ├── data-cleaning.R             # End-to-end data cleaning, imputation, and merging
+    ├── eda.R                       # Master EDA visualization pipeline (all 3 figures)
+    ├── eda-weekly-sales-yoy.R      # EDA 1: Year-over-Year weekly sales seasonality
+    ├── eda-correlation-matrix.R    # EDA 2: Feature correlation matrix heatmap
+    └── eda-sales-by-size.R         # EDA 3: Store size vs. mean weekly sales by type
 ```
 
 ---
@@ -72,8 +81,9 @@ The project is developed in **R (version 4.6.1 or $\ge$ 4.1.0)**. Ensure the fol
 
 ```r
 install.packages(c(
-  "tidyverse",  # Data manipulation and wrangling (dplyr, readr, tidyr)
-  "lubridate"   # Robust date parsing and time-feature extraction
+  "tidyverse",  # Data manipulation, wrangling, and ggplot2 visualization
+  "lubridate",  # Date parsing and time-feature extraction
+  "scales"      # Axis formatting for plots (currency, compact units)
 ))
 ```
 
@@ -98,6 +108,46 @@ source("scripts/data-cleaning.R")
 ```
 
 The script will generate the cleaned datasets (`features_clean.rds`, `train_merged_clean.rds`, and `test_merged_clean.rds`) and save them into `data/clean/`.
+
+---
+
+## Exploratory Data Analysis (EDA)
+
+The EDA scripts read the cleaned dataset (`data/clean/train_merged_clean.rds`) and generate visualizations saved to `figures/`.
+
+### Running EDA Scripts
+Ensure your working directory is set to the repository root folder, then execute either the master pipeline or individual scripts:
+
+```r
+# Option 1: Run the full EDA pipeline (generates all 3 figures)
+source("scripts/eda.R")
+
+# Option 2: Run individual visualizations
+source("scripts/eda-weekly-sales-yoy.R")      # Year-over-Year seasonality
+source("scripts/eda-correlation-matrix.R")    # Feature correlation matrix
+source("scripts/eda-sales-by-size.R")         # Store size vs. mean sales by type
+```
+
+### Visualizations & Key Insights
+
+#### 1. Year-over-Year Seasonality (`figures/weekly-sales-YoY.png`)
+- **Baseline Stability**: Total weekly sales maintain a consistent baseline between $42M and $50M across non-peak periods.
+- **Mid-Year Demand**: Measurable sales lifts occur during Easter (~April) and the Fourth of July week (~$52M).
+- **Major Holiday Surges**: Massive volume spikes occur during Thanksgiving / Black Friday week (~$66M–$67M) and the pre-Christmas shopping week (~$77M–$81M).
+- **Post-Holiday Trough**: Sales contract sharply in January (~$40M–$41M) likely due to post-holiday consumer fatigue and seasonal weather.
+- *Note on 2012 Horizon*: Training data ends on October 26, 2012; the 2012 Thanksgiving and Christmas peaks fall entirely within the test forecast window.
+
+#### 2. Feature Correlation Matrix (`figures/feature-correlation-matrix.png`)
+- **Store Size Dominance**: Physical store floor area (`Size`) exhibits the strongest positive linear correlation with `Weekly_Sales` ($r \approx 0.24$).
+- **Weak Direct Macro Influence**: Macro indicators (`CPI`, `Unemployment`, `Fuel_Price`) correlate strongly with temporal trends over 2010–2012, but display near-zero direct linear correlation with weekly sales.
+- **Markdown Patterns**: Promotional markdowns correlate moderately with each other (notably `MarkDown1` and `MarkDown4`), but have weak linear correlation with aggregate weekly sales. Sales volume is primarily governed by store scale, annual seasonality, and holiday events.
+
+#### 3. Store Size vs. Mean Sales by Type (`figures/avg-weekly-sales-by-size.png`)
+- **Store Format Clustering**: Stores segment distinctly into three formats:
+  - **Type A**: Supercenters (>150,000 sq ft) commanding the highest average weekly department sales (\$18k–\$30k).
+  - **Type B**: Mid-sized stores (roughly 30,000–140,000 sq ft) occupying intermediate sales volumes.
+  - **Type C**: Small-format neighborhood stores (30,000–45,000 sq ft) clustering at the lower volume baseline.
+- **Scale Effect**: Within each store type, larger square footage correlates with higher average department sales, confirming store type and size as critical structural forecasting features.
 
 ---
 
