@@ -1,0 +1,24 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# RStudio Project files
+.Rproj.user/
+
+# Knitr and R Markdown artifacts
+*.knit.md
+*.utf8.md
+*_cache/
+cache/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
