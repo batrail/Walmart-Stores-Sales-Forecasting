@@ -28,7 +28,12 @@ message(sprintf("Loaded Train: %d rows | Test: %d rows | Stores: %d rows | Featu
 message("Cleaning features and performing store-level linear trend imputation...")
 
 features_clean <- features %>%
-  mutate(Date = ymd(Date)) %>%
+  mutate(
+    Date = ymd(Date),
+    # Count non-missing MarkDown columns before zero-filling so we know how many were reported
+    reported_markdown_count = rowSums(!is.na(pick(starts_with("MarkDown")))),
+    has_any_markdown = reported_markdown_count > 0
+  ) %>%
   
   # Markdowns: missing values assumed 0 lift; negative corrections clamped to 0
   mutate(across(starts_with("MarkDown"), ~ replace_na(., 0))) %>%
@@ -58,6 +63,8 @@ features_clean <- features %>%
 
 # Clean and Merge Training Dataset
 # - Note: Negative Weekly_Sales values (<0.3% of rows) are preserved
+# - Chronological split: ~6 months (26 weeks) held out for validation
+validation_cutoff <- ymd("2012-05-04")
 message("Merging training data with features and store metadata...")
 
 train_clean <- train %>%
@@ -67,7 +74,8 @@ train_clean <- train %>%
   mutate(
     Year = year(Date),
     Month = month(Date),
-    Week = week(Date)
+    Week = week(Date),
+    split = ifelse(Date < validation_cutoff, "train", "valid")
   )
 
 #  Clean and Merge Test Dataset

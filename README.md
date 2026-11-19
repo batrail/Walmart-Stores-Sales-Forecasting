@@ -83,10 +83,10 @@ install.packages(c(
 
 ### Summary of Cleaning Logic
 1. **Date Standardization**: Week-ending Friday dates parsed with `lubridate::ymd()`.
-2. **Returns & Negative Sales**: Negative sales (<0.3% of rows) represent legitimate retail return volume and are preserved to avoid overstock biases.
-3. **Promotional Markdowns**: Missing pre-November 2011 markdowns (`MarkDown1`–`MarkDown5`) are replaced with `0` (baseline condition); negative accounting adjustments are clamped to `0`.
-4. **Macroeconomic Indicators (CPI & Unemployment)**: Missing 2013 values are imputed using store-specific linear trend regression (`lm(Indicator ~ time_num)`).
-5. **Merging**: `train` and `test` are joined with cleaned features and store metadata, with `Year`, `Month`, and `Week` features extracted.
+2. **Markdown Indicators & Cleaning**: Prior to zero-filling `MarkDown1`–`MarkDown5`, `reported_markdown_count` records how many markdown columns were non-missing and `has_any_markdown` sets a logical (`TRUE`/`FALSE`) flag (`reported_markdown_count > 0`). Missing markdowns are then replaced with `0` (assumed 0 lift) and negative accounting adjustments are clamped to `0`.
+3. **Macroeconomic Indicators (CPI & Unemployment)**: Missing values are imputed per store using linear trend regression over time (`lm(Indicator ~ time_num)`), preserving localized regional economic trends.
+4. **Returns & Negative Sales**: Negative sales (<0.3% of rows) represent legitimate retail return volume and are preserved to avoid overstock biases.
+5. **Calendar Features, Validation Split & Merging**: `train` and `test` are joined with cleaned features and store metadata, extracting `Year`, `Month`, and `Week`. `train_clean` also creates a chronological `split` column (`"train"` vs. `"valid"`) using a `2012-05-04` cutoff (~6 months / 26 weeks held out for validation).
 
 ### Running the Data Cleaning Script
 1. In RStudio, set your working directory to the repository root folder:  
