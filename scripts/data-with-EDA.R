@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lubridate)
 
+
 message("Starting data loading and cleaning pipeline...")
 
 # Relative file paths from repository root
