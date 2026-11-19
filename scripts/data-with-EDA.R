@@ -1,6 +1,5 @@
 library(tidyverse)
 library(lubridate)
-library(scales)
 
 message("Starting data loading and cleaning pipeline...")
 
@@ -29,7 +28,12 @@ message(sprintf("Loaded Train: %d rows | Test: %d rows | Stores: %d rows | Featu
 message("Cleaning features and performing store-level linear trend imputation...")
 
 features_clean <- features %>%
-  mutate(Date = ymd(Date)) %>%
+  mutate(
+    Date = ymd(Date),
+    # Count non-missing MarkDown columns before zero-filling so we know how many were reported
+    reported_markdown_count = rowSums(!is.na(pick(starts_with("MarkDown")))),
+    has_any_markdown = reported_markdown_count > 0
+  ) %>%
   
   # Markdowns: missing values assumed 0 lift; negative corrections clamped to 0
   mutate(across(starts_with("MarkDown"), ~ replace_na(., 0))) %>%
@@ -59,6 +63,8 @@ features_clean <- features %>%
 
 # Clean and Merge Training Dataset
 # - Note: Negative Weekly_Sales values (<0.3% of rows) are preserved
+# - Chronological split: ~6 months (26 weeks) held out for validation
+validation_cutoff <- ymd("2012-05-04")
 message("Merging training data with features and store metadata...")
 
 train_clean <- train %>%
@@ -68,7 +74,8 @@ train_clean <- train %>%
   mutate(
     Year = year(Date),
     Month = month(Date),
-    Week = week(Date)
+    Week = week(Date),
+    split = ifelse(Date < validation_cutoff, "train", "valid")
   )
 
 #  Clean and Merge Test Dataset
@@ -93,7 +100,7 @@ saveRDS(test_clean, file.path(clean_dir, "test_merged_clean.rds"))
 
 message("Data cleaning pipeline completed successfully!")
 
-# WEEKLY SALES BY YEAR
+#WEEKLY SALES BY YEAR LAYERED
 weekly_sales_layered <- train_clean %>%
   group_by(Date, Year) %>%
   summarise(Total_Sales = sum(Weekly_Sales)) %>%
@@ -101,7 +108,7 @@ weekly_sales_layered <- train_clean %>%
     Aligned_Date = make_date(year = 2000L, month = month(Date), day = day(Date)),
     Year_Factor = factor(Year)
   )
-
+ 
 ggplot(weekly_sales_layered, aes(x = Aligned_Date, y = Total_Sales, color = Year_Factor, group = Year_Factor)) +
   geom_line(linewidth = 0.8) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b") +
@@ -113,20 +120,16 @@ ggplot(weekly_sales_layered, aes(x = Aligned_Date, y = Total_Sales, color = Year
     color = "Year"
   ) +
   theme_minimal()
-
-
-
+ 
+ 
 # CORRELATION COEFFICIENT
 cor_data <- train_clean %>%
   select(Weekly_Sales, Size, CPI, Unemployment, Temperature, Fuel_Price, starts_with("MarkDown"))
- 
 cor_matrix <- cor(cor_data, use = "complete.obs")
- 
 cor_long <- cor_matrix %>%
   as.data.frame() %>%
   rownames_to_column(var = "Var1") %>%
   pivot_longer(-Var1, names_to = "Var2", values_to = "Correlation")
- 
 ggplot(cor_long, aes(x = Var1, y = Var2, fill = Correlation)) +
   geom_tile(color = "white") +
   scale_fill_gradient2(
@@ -141,14 +144,12 @@ ggplot(cor_long, aes(x = Var1, y = Var2, fill = Correlation)) +
   ) +
   coord_fixed() +
   labs(title = "Feature Correlation Matrix", x = "", y = "")
-
-
-
+ 
 # STORE SIZE VS MEAN OVER YEAR
 store_summary <- train_clean %>%
   group_by(Store, Type, Size) %>%
   summarise(mean_sales = mean(Weekly_Sales, na.rm = TRUE), .groups = "drop")
-
+ 
 ggplot(store_summary, aes(x = Size, y = mean_sales, color = Type)) +
   geom_point(size = 2.5, alpha = 0.85) +
   geom_smooth(method = "lm", se = FALSE, linetype = "dashed", linewidth = 0.7) +
