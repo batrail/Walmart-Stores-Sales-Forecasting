@@ -1,5 +1,6 @@
 library(tidyverse)
 library(lubridate)
+libary(scales)
 
 
 message("Starting data loading and cleaning pipeline...")
