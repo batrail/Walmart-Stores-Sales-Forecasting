@@ -62,7 +62,11 @@ Walmart-Stores-Sales-Forecasting/
 │   ├── avg-weekly-sales-by-size.png    # Store size vs. mean sales by store type
 │   ├── feature-correlation-matrix.png  # Correlation matrix across features and sales
 │   └── weekly-sales-YoY.png            # Year-over-Year weekly sales seasonality
-├── models/                         # Trained models and evaluation metrics
+├── models/                         # Model training scripts, outputs, and documentation
+│   ├── outputs/                    # Exported validation predictions for model evaluation
+│   │   └── baseline_predictions.rds# Baseline validation predictions
+│   ├── baseline-historical-average.R # Historical group average baseline script
+│   └── README.md                   # Model evaluation results and error breakdown
 ├── rubric/                         # Instructor-provided project instructions and grading rubric
 └── scripts/
     ├── data-cleaning.R             # End-to-end data cleaning, imputation, and merging
@@ -217,6 +221,27 @@ message("Validation WMAE: $", round(val_wmae, 2))
   - **Units**: Output is in **USD ($)**, measuring the weighted average absolute dollar error per store-department-week.
   - **Directionality**: **Lower is better** ($0$ indicates a perfect forecast); **higher is worse** (reflects larger average dollar divergence from actual sales).
   - **Holiday Sensitivity**: Because holiday weeks carry 5× weight, forecasting misses during Thanksgiving, Christmas, Super Bowl, or Labor Day weeks impact overall WMAE far more severely than misses during routine shopping weeks.
+
+### Running Models
+
+All model scripts are located in `models/` and designed to be executed directly from the repository root folder.
+
+#### 1. Execution
+Ensure your working directory is set to the repository root, then source the desired model script:
+
+```r
+# Historical Group Average Baseline
+source("models/baseline-historical-average.R")
+```
+
+#### 2. Model Outputs & Predictions
+When executed, each model script:
+- Fits on the training split (`split == "train"`),
+- Generates predictions across the 52-week validation split (`split == "valid"`),
+- Computes and prints validation metrics (WMAE and MAE) via `scripts/eval-wmae.R`,
+- Saves standardized validation prediction tables into `models/outputs/`.
+
+For complete benchmark scores, metric comparisons across models, and in-depth error breakdowns (holiday vs. non-holiday performance), refer to [`models/README.md`](models/README.md).
 
 ---
 
