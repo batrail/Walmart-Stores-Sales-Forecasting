@@ -63,8 +63,8 @@ features_clean <- features %>%
 
 # Clean and Merge Training Dataset
 # - Note: Negative Weekly_Sales values (<0.3% of rows) are preserved
-# - Chronological split: ~6 months (26 weeks) held out for validation
-validation_cutoff <- ymd("2012-05-04")
+# - Chronological split: ~12 months (52 weeks) held out for validation
+validation_cutoff <- ymd("2011-11-04")
 message("Merging training data with features and store metadata...")
 
 train_clean <- train %>%

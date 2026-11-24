@@ -57,6 +57,7 @@ Walmart-Stores-Sales-Forecasting/
 │       └── README.md               # Summary of cleaning steps
 │
 ├── docs/                           # Deliverable reports and documentation
+│   └── Report.pdf                  # Project report draft (problem, EDA, methodologies)
 ├── figures/                        # Exploratory data visualizations
 │   ├── avg-weekly-sales-by-size.png    # Store size vs. mean sales by store type
 │   ├── feature-correlation-matrix.png  # Correlation matrix across features and sales
@@ -68,7 +69,8 @@ Walmart-Stores-Sales-Forecasting/
     ├── eda.R                       # Master EDA visualization pipeline (all 3 figures)
     ├── eda-weekly-sales-yoy.R      # EDA 1: Year-over-Year weekly sales seasonality
     ├── eda-correlation-matrix.R    # EDA 2: Feature correlation matrix heatmap
-    └── eda-sales-by-size.R         # EDA 3: Store size vs. mean weekly sales by type
+    ├── eda-sales-by-size.R         # EDA 3: Store size vs. mean weekly sales by type
+    └── eval-wmae.R                 # WMAE evaluation metric calculation function
 ```
 
 ---
@@ -94,7 +96,7 @@ install.packages(c(
 2. **Markdown Indicators & Cleaning**: Prior to zero-filling `MarkDown1`–`MarkDown5`, `reported_markdown_count` records how many markdown columns were non-missing and `has_any_markdown` sets a logical (`TRUE`/`FALSE`) flag (`reported_markdown_count > 0`). Missing markdowns are then replaced with `0` (assumed 0 lift) and negative accounting adjustments are clamped to `0`.
 3. **Macroeconomic Indicators (CPI & Unemployment)**: Missing values are imputed per store using linear trend regression over time (`lm(Indicator ~ time_num)`), preserving localized regional economic trends.
 4. **Returns & Negative Sales**: Negative sales (<0.3% of rows) represent legitimate retail return volume and are preserved to avoid overstock biases.
-5. **Calendar Features, Validation Split & Merging**: `train` and `test` are joined with cleaned features and store metadata, extracting `Year`, `Month`, and `Week`. `train_clean` also creates a chronological `split` column (`"train"` vs. `"valid"`) using a `2012-05-04` cutoff (\~6 months / 26 weeks held out for validation).
+5. **Calendar Features, Validation Split & Merging**: `train` and `test` are joined with cleaned features and store metadata, extracting `Year`, `Month`, and `Week`. `train_clean` also creates a chronological `split` column (`"train"` vs. `"valid"`) using a `2011-11-04` cutoff (\~12 months / 52 weeks held out for validation, capturing a full annual cycle with major holiday surges and markdowns).
 
 ### Running the Data Cleaning Script
 1. In RStudio, set your working directory to the repository root folder:  
@@ -129,7 +131,7 @@ source("scripts/eda-sales-by-size.R")         # Store size vs. mean sales by typ
 ### Visualizations & Key Insights
 
 #### 1. Year-over-Year Seasonality (`figures/weekly-sales-YoY.png`)
-- **Baseline Stability**: Total weekly sales maintain a consistent baseline between $42M and $50M across non-peak periods.
+- **Baseline Stability**: Total weekly sales maintain a consistent baseline between \~$42M and \~$50M across non-peak periods.
 - **Mid-Year Demand**: Measurable sales lifts occur during Easter (\~April) and the Fourth of July week (\~$52M).
 - **Major Holiday Surges**: Massive volume spikes occur during Thanksgiving / Black Friday week (\~$66M–$67M) and the pre-Christmas shopping week (\~$77M–$81M).
 - **Post-Holiday Trough**: Sales contract sharply in January (\~$40M–$41M) likely due to post-holiday consumer fatigue and seasonal weather.
@@ -146,6 +148,75 @@ source("scripts/eda-sales-by-size.R")         # Store size vs. mean sales by typ
   - **Type B**: Mid-sized stores (roughly 30,000–140,000 sq ft) occupying intermediate sales volumes.
   - **Type C**: Small-format neighborhood stores (30,000–45,000 sq ft) clustering at the lower volume baseline.
 - **Scale Effect**: Within each store type, larger square footage correlates with higher average department sales, confirming store type and size as critical structural forecasting features.
+
+---
+
+## Modeling Methodology & Evaluation
+
+### Planned Modeling Approaches
+To forecast weekly department sales across the 45 stores, four modeling approaches will be evaluated on our chronological validation split:
+1. **Historical Group Average (Baseline)**: Grouped mean `Weekly_Sales` by `Store`, `Dept`, and `IsHoliday` serving as an intuitive domain benchmark.
+2. **Linear Regression**: Parametric baseline modeling sales against store descriptors (`Size`, `Type`), calendar timing (`Month`, `Week`, `IsHoliday`), macro indicators (`CPI`, `Unemployment`, `Temperature`, `Fuel_Price`), and markdown indicators.
+3. **Decision Tree**: Non-linear recursive partitioning capable of capturing interaction thresholds (e.g., department-specific holiday surges).
+4. **Random Forest**: Bagged ensemble of decorrelated decision trees to model complex non-linear interactions while reducing single-tree variance.
+
+### Validation Strategy & Reproducibility
+- **Chronological Split**: To avoid lookahead bias, models are evaluated on a 52-week chronological holdout (`validation_cutoff <- ymd("2011-11-04")`).
+  - **Training Split (`split == "train"`)**: Records prior to November 4, 2011 (\~91 weeks).
+  - **Validation Split (`split == "valid"`)**: Records from November 4, 2011 through October 26, 2012 (52 weeks / \~12 months).
+  - *Rationale*: A 52-week holdout captures a full annual cycle, ensuring high-impact holiday peaks (Thanksgiving, Christmas, Super Bowl) and promotional markdowns are evaluated under representative demand conditions.
+- **Reproducibility**: Set `set.seed(42)` before training or resampling models to guarantee deterministic results.
+
+### Running & Calling the Evaluation Script (`scripts/eval-wmae.R`)
+
+The helper script [`scripts/eval-wmae.R`](scripts/eval-wmae.R) defines `calc_wmae()` to score model predictions against actual sales using the competition's official Weighted Mean Absolute Error metric.
+
+#### 1. Sourcing the Script
+Ensure your working directory is set to the repository root folder, then source the script:
+
+```r
+source("scripts/eval-wmae.R")
+```
+
+#### 2. Integrating `calc_wmae()` in R Code
+Use the following template to evaluate model predictions on the validation set:
+
+```r
+library(tidyverse)
+
+# 1. Source the WMAE evaluation function
+source("scripts/eval-wmae.R")
+
+# 2. Load merged clean training dataset
+train_merged <- readRDS("data/clean/train_merged_clean.rds")
+
+# 3. Partition train and validation splits
+train_set <- train_merged %>% filter(split == "train")
+valid_set <- train_merged %>% filter(split == "valid")
+
+# 4. Fit your model on train_set and generate predictions on valid_set
+# Example: valid_set$pred <- predict(model, newdata = valid_set)
+
+# 5. Compute validation WMAE
+val_wmae <- calc_wmae(
+  actual = valid_set$Weekly_Sales,
+  predicted = valid_set$pred,
+  is_holiday = valid_set$IsHoliday
+)
+
+message("Validation WMAE: $", round(val_wmae, 2))
+```
+
+#### 3. Metric Interpretation & Calculation Details
+- **Formula & Weights**:
+  $$\text{WMAE} = \frac{1}{\sum_{i=1}^n w_i} \sum_{i=1}^n w_i |y_i - \hat{y}_i|$$
+  - $w_i = 5$ for holiday weeks (`IsHoliday == TRUE`), penalizing holiday forecast errors 5× heavier.
+  - $w_i = 1$ for non-holiday weeks (`IsHoliday == FALSE`).
+  - Pairs where actual or predicted values are `NA` are automatically excluded from both error and weight sums.
+- **Interpreting Scores**:
+  - **Units**: Output is in **USD ($)**, measuring the weighted average absolute dollar error per store-department-week.
+  - **Directionality**: **Lower is better** ($0$ indicates a perfect forecast); **higher is worse** (reflects larger average dollar divergence from actual sales).
+  - **Holiday Sensitivity**: Because holiday weeks carry 5× weight, forecasting misses during Thanksgiving, Christmas, Super Bowl, or Labor Day weeks impact overall WMAE far more severely than misses during routine shopping weeks.
 
 ---
 
