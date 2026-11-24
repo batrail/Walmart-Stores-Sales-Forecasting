@@ -27,14 +27,15 @@ The historical group average establishes the benchmark floor. It computes histor
 
 ### Error Breakdown: Routine vs. Holiday Weeks
 
-| Segment | Records | Share of Validation | Mean Absolute Error (MAE) | Metric Weight |
-| :--- | :---: | :---: | :---: | :---: |
-| **Non-Holiday Weeks** (`IsHoliday == FALSE`) | 142,395 | 92.2% | **$2,859.98** | 1× |
-| **Holiday Weeks** (`IsHoliday == TRUE`) | 11,991 | 7.8% | **$4,264.12** | 5× |
-| **Overall Weighted (WMAE)** | **154,386** | **100.0%** | **$3,275.77** | — |
+| Segment | Records | Share of Validation | Mean Weekly Sales | Mean Predicted Sales | Mean Absolute Error (MAE) | Metric Weight |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Non-Holiday Weeks** (`IsHoliday == FALSE`) | 142,395 | 92.2% | **$16,063.75** | $15,686.11 | **$2,859.98** | 1× |
+| **Holiday Weeks** (`IsHoliday == TRUE`) | 11,991 | 7.8% | **$17,594.49** | $16,394.37 | **$4,264.12** | 5× |
+| **Overall / Weighted** | **154,386** | **100.0%** | **$16,182.64** | **$15,741.12** | **$3,275.77 (WMAE)** | — |
 
 ### Key Observations
-- **Holiday Surge Penalty**: The average error during holiday weeks (\$4,264.12) is nearly **49% higher** than during non-holiday weeks (\$2,859.98). A static mean cannot capture sharp year-over-year fluctuations during major promotional peaks (Thanksgiving, Christmas, Super Bowl).
+- **Holiday Sales Lift**: Actual average weekly sales surge from **$16,063.75** (routine weeks) to **$17,594.49** (holiday weeks), a +**$1,530.74** (+9.5%) lift. A comparative summary dataframe of all feature means across segments can be generated for exploration via [`scripts/summary-means.R`](../scripts/summary-means.R).
+- **Holiday Surge Penalty**: The average error during holiday weeks (\$4,264.12) is nearly **49% higher** than during non-holiday weeks (\$2,859.98). A static mean cannot capture sharp year-over-year fluctuations during major promotional peaks (predicting a mean of only **$16,394.37** on holiday weeks, underpredicting holiday volume by ~$1,200 on average).
 - **WMAE Impact**: Because holiday errors are weighted 5×, they inflate the overall WMAE by **+$306.91** relative to unweighted MAE (\$3,275.77 vs. \$2,968.86).
 - **Baseline Role**: The baseline successfully captures persistent department and store volume scales, but leaves significant variance unexplained from macro indicators, promotional markdowns, and non-linear holiday interactions. Subsequent machine learning models must beat **$3,275.77** to demonstrate value.
 

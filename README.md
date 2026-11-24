@@ -74,7 +74,8 @@ Walmart-Stores-Sales-Forecasting/
     ├── eda-weekly-sales-yoy.R      # EDA 1: Year-over-Year weekly sales seasonality
     ├── eda-correlation-matrix.R    # EDA 2: Feature correlation matrix heatmap
     ├── eda-sales-by-size.R         # EDA 3: Store size vs. mean weekly sales by type
-    └── eval-wmae.R                 # WMAE evaluation metric calculation function
+    ├── eval-wmae.R                 # WMAE evaluation metric calculation function
+    └── summary-means.R             # Feature means comparison dataframe (for RStudio exploration)
 ```
 
 ---
@@ -166,8 +167,8 @@ To forecast weekly department sales across the 45 stores, four modeling approach
 
 ### Validation Strategy & Reproducibility
 - **Chronological Split**: To avoid lookahead bias, models are evaluated on a 52-week chronological holdout (`validation_cutoff <- ymd("2011-11-04")`).
-  - **Training Split (`split == "train"`)**: Records prior to November 4, 2011 (\~91 weeks).
-  - **Validation Split (`split == "valid"`)**: Records from November 4, 2011 through October 26, 2012 (52 weeks / \~12 months).
+  - **Training Split (`split == "train"`)**: Records prior to November 4, 2011 (\~91 weeks, mean sales: **$15,864.89**).
+  - **Validation Split (`split == "valid"`)**: Records from November 4, 2011 through October 26, 2012 (52 weeks / \~12 months, mean sales: **$16,182.64**; non-holiday: **$16,063.75**, holiday: **$17,594.49**). Other feature means within the valid split can be explored via [`scripts/summary-means.R`](scripts/summary-means.R).
   - *Rationale*: A 52-week holdout captures a full annual cycle, ensuring high-impact holiday peaks (Thanksgiving, Christmas, Super Bowl) and promotional markdowns are evaluated under representative demand conditions.
 - **Reproducibility**: Set `set.seed(42)` before training or resampling models to guarantee deterministic results.
 
