@@ -39,7 +39,6 @@ Where:
 
 ```text
 Walmart-Stores-Sales-Forecasting/
-├── .gitignore                      # Git ignore rules for R session files & cache
 ├── README.md                       # Project overview, structure, and setup instructions
 │
 ├── data/
@@ -62,10 +61,11 @@ Walmart-Stores-Sales-Forecasting/
 │   ├── avg-weekly-sales-by-size.png    # Store size vs. mean sales by store type
 │   ├── feature-correlation-matrix.png  # Correlation matrix across features and sales
 │   └── weekly-sales-YoY.png            # Year-over-Year weekly sales seasonality
-├── models/                         # Model training scripts, outputs, and documentation
-│   ├── outputs/                    # Exported validation predictions for model evaluation
-│   │   └── baseline_predictions.rds# Baseline validation predictions
-│   ├── baseline-historical-average.R # Historical group average baseline script
+├── models/                          # Model training scripts, outputs, and documentation
+│   ├── outputs/                     # Exported validation predictions for model evaluation
+│   │   └── baseline_predictions.rds    # Baseline validation predictions
+│   ├── baseline-historical-average.R   # Historical group average baseline script
+│   ├── linearRegression.R          # Linear regression script
 │   └── README.md                   # Model evaluation results and error breakdown
 ├── rubric/                         # Instructor-provided project instructions and grading rubric
 └── scripts/
