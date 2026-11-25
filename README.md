@@ -63,9 +63,12 @@ Walmart-Stores-Sales-Forecasting/
 │   └── weekly-sales-YoY.png            # Year-over-Year weekly sales seasonality
 ├── models/                          # Model training scripts, outputs, and documentation
 │   ├── outputs/                     # Exported validation predictions for model evaluation
-│   │   └── baseline_predictions.rds    # Baseline validation predictions
-│   ├── baseline-historical-average.R   # Historical group average baseline script
+│   │   ├── baseline_predictions.rds       # Baseline validation predictions
+│   │   ├── lm_predictions.rds             # Linear regression validation predictions
+│   │   └── random_forests_predictions.rds # Random forest test set predictions
+│   ├── baseline-historical-average.R      # Historical group average baseline script
 │   ├── linearRegression.R          # Linear regression script
+│   ├── random-forests.R            # Random forest script
 │   └── README.md                   # Model evaluation results and error breakdown
 ├── rubric/                         # Instructor-provided project instructions and grading rubric
 └── scripts/
@@ -86,11 +89,16 @@ The project is developed in **R (version 4.6.1 or $\ge$ 4.1.0)**. Ensure the fol
 
 ```r
 install.packages(c(
-  "tidyverse",  # Data manipulation, wrangling, and ggplot2 visualization
-  "lubridate",  # Date parsing and time-feature extraction
-  "scales"      # Axis formatting for plots (currency, compact units)
+  "tidyverse",   # Data manipulation, wrangling, and ggplot2 visualization
+  "lubridate",   # Date parsing and time-feature extraction
+  "scales",      # Axis formatting for plots (currency, compact units)
+  "fixest",      # Fast fixed-effects linear regression (models/linearRegression.R)
+  "tidymodels",  # Modeling framework (models/random-forests.R)
+  "ranger"       # Fast random forest engine (models/random-forests.R)
 ))
 ```
+
+*(Note: Multi-threading in `models/random-forests.R` utilizes `parallel`, which is included with base R).*
 
 ---
 
@@ -233,6 +241,12 @@ Ensure your working directory is set to the repository root, then source the des
 ```r
 # Historical Group Average Baseline
 source("models/baseline-historical-average.R")
+
+# Fixed-Effects Linear Regression
+source("models/linearRegression.R")
+
+# Random Forest
+source("models/random-forests.R")
 ```
 
 #### 2. Model Outputs & Predictions
